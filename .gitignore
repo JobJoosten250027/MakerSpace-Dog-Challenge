@@ -1,0 +1,93 @@
+# Unitree SDK directories
+unitree_mujoco/
+unitree_sdk2_python/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.Python
+env/
+venv/
+.venv/
+ENV/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_checkpoints/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-workspace
+*.sublime-project
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Data Science
+*.csv
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+*.joblib
+*.parquet
+*.feather
+*.xlsx
+*.xls
+data/
+datasets/
+models/
+checkpoints/
+
+# Machine Learning
+*.pt
+*.pth
+*.onnx
+*.pb
+*.tflite
+wandb/
+mlruns/
+
+# Logs
+*.log
+logs/
+
+# Environment variables
+.env
+.env.local
+
+# Azure
+.azure/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# RDKit/Chemistry
+*.sdf
+*.mol2
+*.pdb
+
+# Temporary files
+*.tmp
+*.temp
+~$*
