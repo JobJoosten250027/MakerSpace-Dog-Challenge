@@ -3,22 +3,20 @@
 GO2-W STANDING - CORRECT JOINT ORDER
 """
 
+#Importing necessary stuff
 import mujoco
 import mujoco.viewer
 import time
 import numpy as np
 
+#Import and load the model of the Unitree Go2-W
 model = mujoco.MjModel.from_xml_path('unitree_mujoco/unitree_robots/go2w/scene.xml')
 data = mujoco.MjData(model)
 
-print("=" * 60)
-print("GO2-W STANDING - FIXED JOINT ORDER")
-print("=" * 60)
-
-# Reset
+#Completely resets simulation to zero state
 mujoco.mj_resetData(model, data)
 
-# Position
+# Position (Base position of where robot is set in simulation; qpos 0-2 are center posisitions in world coordinates (XYZ).)
 data.qpos[0] = 0.0   # X
 data.qpos[1] = 0.0   # Y
 data.qpos[2] = 0.45  # Z
