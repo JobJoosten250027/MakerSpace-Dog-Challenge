@@ -1,1 +1,9 @@
 Hallo This is the README file of this REPO, for some interesting context for when Bix returns to the living world
+
+pip install mujoco
+git clone https://github.com/unitreerobotics/unitree_mujoco.git
+- cd 
+- 
+
+
+KMP_DUPLICATE_LIB_OK=TRUE mjpython name_of_file.py
