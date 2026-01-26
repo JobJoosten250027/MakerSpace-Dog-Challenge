@@ -123,22 +123,29 @@ TRANSITION_DURATION = 2.0
 is_spinning = False
 spin_start_time = 0.0
 
+# Movement state
+is_moving = False
+move_direction = 'forward'  # 'forward' or 'backward'
+
+# === MOVEMENT TUNING PARAMETERS ===
+MOVE_WHEEL_SPEED = 10.0  # Wheel rotation speed (rad/s) - adjust for faster/slower movement
+
 # Jump state
 is_jumping = False
 jump_start_time = 0.0
 
 # === JUMP TUNING PARAMETERS ===
 # Adjust these if the jump doesn't look right in your simulation
-JUMP_CROUCH_TIME = 0.7   # Time to crouch before jump (increase if needs more windup)
+JUMP_CROUCH_TIME = 0.3   # Time to crouch before jump (increase if needs more windup)
 JUMP_PUSH_TIME = 0.15    # Time to push off ground (decrease for more explosive)
-JUMP_FLIGHT_TIME = 0.05   # Time in air (adjust based on actual hang time)
-JUMP_LAND_TIME = 0.5     # Time to absorb landing (increase if falling over)
+JUMP_FLIGHT_TIME = 0.4   # Time in air (adjust based on actual hang time)
+JUMP_LAND_TIME = 0.3     # Time to absorb landing (increase if falling over)
 
 # FRONT LEGS - Jump pose angles
 JUMP_FRONT_CROUCH_THIGH = 1.4   # How much to bend thighs in crouch (higher = more crouch)
 JUMP_FRONT_CROUCH_CALF = -2.8   # How much to bend calves in crouch (more negative = more crouch)
-JUMP_FRONT_PUSH_THIGH = 0.7#0.3#0.1#0.2     # Thigh angle during push (lower = more extension)
-JUMP_FRONT_PUSH_CALF = -0.05#-0.6#-0.4     # Calf angle during push (closer to 0 = more extension)
+JUMP_FRONT_PUSH_THIGH = 0.2     # Thigh angle during push (lower = more extension)
+JUMP_FRONT_PUSH_CALF = -0.4     # Calf angle during push (closer to 0 = more extension)
 JUMP_FRONT_FLIGHT_THIGH = 0.5   # Thigh angle in flight (adjust for tucking)
 JUMP_FRONT_FLIGHT_CALF = -1.0   # Calf angle in flight (adjust for tucking)
 JUMP_FRONT_LAND_THIGH = 0.8     # Final thigh angle after landing
@@ -147,10 +154,10 @@ JUMP_FRONT_LAND_CALF = -1.6     # Final calf angle after landing
 # REAR LEGS - Jump pose angles (adjust these to fix back-flip problem)
 JUMP_REAR_CROUCH_THIGH = 1.2    # Less crouch than front to balance jump
 JUMP_REAR_CROUCH_CALF = -2.4    # Less crouch than front to balance jump
-JUMP_REAR_PUSH_THIGH = 0.05#0.1      # More extension than front (push harder)
-JUMP_REAR_PUSH_CALF = -0.4      # More extension than front (push harder)
-JUMP_REAR_FLIGHT_THIGH = 0.7#0.5   
-JUMP_REAR_FLIGHT_CALF = -0.8#-1.0   
+JUMP_REAR_PUSH_THIGH = 0.1      # More extension than front (push harder)
+JUMP_REAR_PUSH_CALF = -0.2      # More extension than front (push harder)
+JUMP_REAR_FLIGHT_THIGH = 0.5   
+JUMP_REAR_FLIGHT_CALF = -1.0   
 JUMP_REAR_LAND_THIGH = 0.8     
 JUMP_REAR_LAND_CALF = -1.6     
 
@@ -236,6 +243,7 @@ def controller(model, data):
     global current_pose, target_pose, transition_start_time
     global is_spinning, spin_start_time
     global is_jumping, jump_start_time
+    global is_moving, move_direction
     
     # Handle jumping (overrides other motions)
     if is_jumping:
@@ -328,21 +336,31 @@ def controller(model, data):
         
         data.ctrl[act_idx] = torque
     
-    # Wheels off
-    for i in range(12, 16):
-        data.ctrl[i] = 0.0
+    # Wheels control (actuators 12-15)
+    if is_moving:
+        # Direction multiplier
+        dir_mult = 1.0 if move_direction == 'forward' else -1.0
+        # Spin all wheels for forward/backward movement
+        for i in range(12, 16):
+            data.ctrl[i] = dir_mult * MOVE_WHEEL_SPEED
+    else:
+        # Wheels off
+        for i in range(12, 16):
+            data.ctrl[i] = 0.0
 
 def key_callback(keycode):
     """Handle keyboard input"""
     global target_pose, transition_start_time, current_pose
     global is_spinning, spin_start_time
     global is_jumping, jump_start_time
+    global is_moving, move_direction
     
     # J key triggers jump
     if keycode in [74, 106]:  # J or j
         if not is_jumping and not transition_start_time:
             is_jumping = True
             is_spinning = False  # Stop spinning if active
+            is_moving = False    # Stop moving if active
             jump_start_time = data.time
             print(f"Command: JUMP! (time={data.time:.2f})")
         return
@@ -351,11 +369,34 @@ def key_callback(keycode):
     if is_jumping:
         return
     
+    # F key - move forward
+    if keycode in [70, 102]:  # F or f
+        is_moving = not is_moving
+        if is_moving:
+            move_direction = 'forward'
+            is_spinning = False  # Stop spinning if active
+            print(f"Command: Wheels FORWARD (time={data.time:.2f})")
+        else:
+            print(f"Command: Wheels stopped (time={data.time:.2f})")
+        return
+    
+    # K key - move backward
+    if keycode in [75, 107]:  # K or k
+        is_moving = not is_moving
+        if is_moving:
+            move_direction = 'backward'
+            is_spinning = False  # Stop spinning if active
+            print(f"Command: Wheels BACKWARD (time={data.time:.2f})")
+        else:
+            print(f"Command: Wheels stopped (time={data.time:.2f})")
+        return
+    
     # S key toggles spin
     if keycode in [83, 115]:  # S or s
         is_spinning = not is_spinning
         if is_spinning:
             spin_start_time = data.time
+            is_moving = False  # Stop moving if active
             # Transition to crouch pose for better stability
             if current_pose != 'spin_crouch':
                 target_pose = 'spin_crouch'
@@ -376,29 +417,37 @@ def key_callback(keycode):
             target_pose = 'standing'
             transition_start_time = data.time
             is_spinning = False  # Stop spinning when changing pose
+            is_moving = False    # Stop moving when changing pose
             print(f"Command: Standing up... (time={data.time:.2f})")
     elif keycode in [73, 105]:  # I or i
         if current_pose != 'sitting':
             target_pose = 'sitting'
             transition_start_time = data.time
             is_spinning = False
+            is_moving = False
             print(f"Command: Sitting down... (time={data.time:.2f})")
     elif keycode in [76, 108]:  # L or l
         if current_pose != 'lying':
             target_pose = 'lying'
             transition_start_time = data.time
             is_spinning = False
+            is_moving = False
             print(f"Command: Laying down... (time={data.time:.2f})")
 
 print("=" * 60)
-print("REALISTIC SPIN & JUMP CONTROL")
+print("GO2-W: SPIN, JUMP & WHEEL MOVEMENT CONTROL")
 print("=" * 60)
 print("Press keys while the viewer window has focus:")
 print("  J - Jump (crouch -> explosive push -> flight -> land)")
+print("  F - Toggle forward wheel movement")
+print("  K - Toggle backward wheel movement")
 print("  S - Toggle spin (legs paddle to create torque)")
 print("  U - Stand up")
 print("  I - Sit down")
 print("  L - Lay down")
+print("\nWheel movement:")
+print("  - All 4 wheels spin together for forward/backward motion")
+print("  - Adjust MOVE_WHEEL_SPEED to control speed")
 print("\nThe spin uses coordinated leg paddling:")
 print("  - Front-right & rear-left push one way")
 print("  - Front-left & rear-right push the other")
@@ -413,6 +462,8 @@ print("  - JUMP_*_TIME: Adjust phase durations")
 print("  - JUMP_FRONT_*: Front leg angles (if jumping too much forward)")
 print("  - JUMP_REAR_*: Rear leg angles (if falling backward/forward)")
 print("  - JUMP_TORQUE_MULTIPLIER: Control jump height")
+print("\nMOVEMENT TUNING:")
+print("  - MOVE_WHEEL_SPEED: Wheel rotation speed")
 print("\nPress ESC or close window to exit")
 print("=" * 60)
 

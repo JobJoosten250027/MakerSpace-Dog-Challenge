@@ -7,3 +7,5 @@ git clone https://github.com/unitreerobotics/unitree_mujoco.git
 
 
 KMP_DUPLICATE_LIB_OK=TRUE mjpython name_of_file.py
+
+KMP_DUPLICATE_LIB_OK=TRUE mjpython all_moves.py
